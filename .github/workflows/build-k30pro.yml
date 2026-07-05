@@ -1,0 +1,40 @@
+name: Build Redmi K30 Pro mainline kernel
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Image and Xiaomi Redmi K30 Pro DTB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc bison flex libssl-dev make gcc-aarch64-linux-gnu \
+            libelf-dev dwarves device-tree-compiler python3
+
+      - name: Configure arm64 defconfig
+        run: |
+          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- defconfig
+
+      - name: Build kernel Image and Redmi K30 Pro DTB
+        run: |
+          make -j"$(nproc)" ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- \
+            Image qcom/sm8250-xiaomi-lmi.dtb
+
+      - name: Upload kernel artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: redmi-k30pro-mainline-linux
+          path: |
+            arch/arm64/boot/Image
+            arch/arm64/boot/dts/qcom/sm8250-xiaomi-lmi.dtb
